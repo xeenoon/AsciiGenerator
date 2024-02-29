@@ -40,12 +40,12 @@ namespace AsciiGenerator
             rtb.Location = new Point(Width/4, 0);
             rtb.Width = (Width / 4) * 3;
             rtb.Height = Height;
-            rtb.Font = new Font("Lucida Console", 8);
+            rtb.Font = new Font("Lucida Console", 5);
 
             asciicharacterlabel.Location = new Point(0, 35);
             asciicharacterlabel.Text = "Gradient colors: ";
 
-            asciicharacters.Location = new Point(0,50);
+            asciicharacters.Location = new Point(0,65);
             asciicharacters.Size = new Size(Width/4 - 10, 30);
             asciicharacters.Text = lighttodark;
 
@@ -54,6 +54,7 @@ namespace AsciiGenerator
             colorareas.Width = (Width / 4) - 10;
             colorareas.Height = Height - 110;
             colorareas.BackColor = Color.White;
+            colorareas.AutoScroll = true;
 
             Controls.Add(rtb);
             Controls.Add(resetascii);
@@ -74,14 +75,14 @@ namespace AsciiGenerator
             
             areas = GenerateColorAreas();
             areas = areas.OrderByDescending(a=>a.colorsum).ToList();
-            float brightnessstepsize = asciicharacters.Text.Count() / areas.Count();
+            float brightnessstepsize = asciicharacters.Text.Count() / (float)areas.Count();
             StringBuilder result = new StringBuilder(string.Concat(Enumerable.Repeat(new string(' ', image.Width) + "\n", image.Height)));
             for (int i = 0; i < areas.Count; i++)
             {
                 List<Point>? area = areas[i].pixels;
                 foreach (var point in area)
                 {
-                    result[point.X + point.Y * (image.Height+1)] = asciicharacters.Text[(int)(i * brightnessstepsize)];
+                    result[point.X + point.Y * (image.Width + 1)] = asciicharacters.Text[(int)(i * brightnessstepsize)];
                 }
 
                 Panel coloroptionspanel = new Panel();
@@ -94,15 +95,25 @@ namespace AsciiGenerator
                 identifier.Text = "Color area " + (i+1) + ":";
                 TextBox asciiletter = new TextBox();
                 asciiletter.Location = new Point(identifier.Size.Width, 0);
-                asciiletter.Size = new Size(10, identifier.Height);
+                asciiletter.Size = new Size(30, identifier.Height);
                 asciiletter.Text = asciicharacters.Text[(int)(i * brightnessstepsize)].ToString();
+                CheckBox highlighttext = new CheckBox();
+                highlighttext.Location = new Point(identifier.Size.Width + 40);
+                highlighttext.Size = new Size(200,identifier.Height);
+                highlighttext.Text = "Highlight area";
+                highlighttext.Click += HighlightAreaToggle;
 
                 coloroptionspanel.Controls.Add(identifier);
                 coloroptionspanel.Controls.Add(asciiletter);
+                coloroptionspanel.Controls.Add(highlighttext);
                 areaitems.Add(coloroptionspanel);
                 colorareas.Controls.Add(coloroptionspanel);
             }
             rtb.Text = result.ToString();
+        }
+        public void HighlightAreaToggle(object sender, EventArgs e)
+        {
+            CheckBox checkbox = (CheckBox)sender;
         }
         public struct PixelArea
         {
