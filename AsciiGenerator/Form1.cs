@@ -7,8 +7,16 @@ namespace AsciiGenerator
     public partial class Form1 : Form
     {
         RichTextBox rtb = new RichTextBox();
+        TextBox asciicharacters = new TextBox();
+        Label asciicharacterlabel = new Label();
         Button uploadimage = new Button();
+
+        Panel colorareas =new Panel();
+        List<Panel> areaitems = new List<Panel>();
+
         Bitmap image;
+        const string lighttodark = " `.-':_,^=;><+!rc*/z?sLTv)J7(|Fi{C}fI31tlu[neoZ5Yxjya]2ESwqkP6h9d4VpOGbUAKXHm8RD#$Bg0MNWQ%&@";
+
         public Form1()
         {
             InitializeComponent();
@@ -26,7 +34,24 @@ namespace AsciiGenerator
             rtb.Width = (Width / 4) * 3;
             rtb.Height = Height;
             rtb.Font = new Font("Lucida Console", 8);
+
+            asciicharacterlabel.Location = new Point(0, 35);
+            asciicharacterlabel.Text = "Gradient colors: ";
+
+            asciicharacters.Location = new Point(0,50);
+            asciicharacters.Size = new Size(Width/4 - 10, 30);
+            asciicharacters.Text = lighttodark;
+
+            //Panel to show all the color areas and allow users to change the character customizeably
+            colorareas.Location = new Point(0, 100);
+            colorareas.Width = (Width / 4) - 10;
+            colorareas.Height = Height - 110;
+            colorareas.BackColor = Color.White;
+
             Controls.Add(rtb);
+            Controls.Add(colorareas);
+            Controls.Add(asciicharacterlabel);
+            Controls.Add(asciicharacters);
             Controls.Add(uploadimage);
         }
         public void OnClick(object sender, EventArgs e)
@@ -41,16 +66,32 @@ namespace AsciiGenerator
             
             var areas = GenerateColorAreas();
             areas = areas.OrderByDescending(a=>a.colorsum).ToList();
-            const string lighttodark = " `.-':_,^=;><+!rc*/z?sLTv)J7(|Fi{C}fI31tlu[neoZ5Yxjya]2ESwqkP6h9d4VpOGbUAKXHm8RD#$Bg0MNWQ%&@";
-            int brightnessstepsize = lighttodark.Count() / areas.Count();
+            float brightnessstepsize = asciicharacters.Text.Count() / areas.Count();
             StringBuilder result = new StringBuilder(string.Concat(Enumerable.Repeat(new string(' ', image.Width) + "\n", image.Height)));
             for (int i = 0; i < areas.Count; i++)
             {
                 List<Point>? area = areas[i].pixels;
                 foreach (var point in area)
                 {
-                    result[point.X + point.Y * (image.Height+1)] = lighttodark[i * brightnessstepsize];
+                    result[point.X + point.Y * (image.Height+1)] = asciicharacters.Text[(int)(i * brightnessstepsize)];
                 }
+
+                Panel coloroptionspanel = new Panel();
+                coloroptionspanel.Location = new Point(0, areaitems.Count() * 60 + 10);
+                coloroptionspanel.Size = new Size(colorareas.Width - 20, 50);
+                coloroptionspanel.BackColor = Color.LightBlue;
+                Label identifier = new Label();
+                identifier.Location = new Point(0,0);
+                identifier.Text = "Color area " + (i+1) + ":";
+                TextBox asciiletter = new TextBox();
+                asciiletter.Location = new Point(identifier.Size.Width, 0);
+                asciiletter.Size = new Size(10, identifier.Height);
+                asciiletter.Text = asciicharacters.Text[(int)(i * brightnessstepsize)].ToString();
+
+                coloroptionspanel.Controls.Add(identifier);
+                coloroptionspanel.Controls.Add(asciiletter);
+                areaitems.Add(coloroptionspanel);
+                colorareas.Controls.Add(coloroptionspanel);
             }
             rtb.Text = result.ToString();
         }
