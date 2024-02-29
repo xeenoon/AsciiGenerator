@@ -6,8 +6,9 @@ namespace AsciiGenerator
 {
     public partial class Form1 : Form
     {
-        PictureBox preview = new PictureBox();
         RichTextBox rtb = new RichTextBox();
+        Button uploadimage = new Button();
+        Bitmap image;
         public Form1()
         {
             InitializeComponent();
@@ -16,15 +17,17 @@ namespace AsciiGenerator
             Width = Screen.PrimaryScreen.Bounds.Width;
             Height = Screen.PrimaryScreen.Bounds.Height;
 
-            preview.Width = Width/2;
-            preview.Height = Height;
-            preview.Click += OnClick;
-            rtb.Location = new Point(Width/2, 0);
-            rtb.Width = Width / 2;
+            uploadimage.Location = new Point(0,0);
+            uploadimage.Size = new Size(100,30);
+            uploadimage.Text = "Upload image";
+            uploadimage.Click += OnClick;
+
+            rtb.Location = new Point(Width/4, 0);
+            rtb.Width = (Width / 4) * 3;
             rtb.Height = Height;
             rtb.Font = new Font("Lucida Console", 8);
-            Controls.Add(preview);
             Controls.Add(rtb);
+            Controls.Add(uploadimage);
         }
         public void OnClick(object sender, EventArgs e)
         {
@@ -33,20 +36,20 @@ namespace AsciiGenerator
             if (openFileDialog.FileName != "")
             {
                 var bmp = Bitmap.FromFile(openFileDialog.FileName);
-                preview.Image = bmp;
+                image = (Bitmap)bmp;
             }
             
             var areas = GenerateColorAreas();
             areas = areas.OrderByDescending(a=>a.colorsum).ToList();
             const string lighttodark = " `.-':_,^=;><+!rc*/z?sLTv)J7(|Fi{C}fI31tlu[neoZ5Yxjya]2ESwqkP6h9d4VpOGbUAKXHm8RD#$Bg0MNWQ%&@";
             int brightnessstepsize = lighttodark.Count() / areas.Count();
-            StringBuilder result = new StringBuilder(string.Concat(Enumerable.Repeat(new string(' ', preview.Image.Width) + "\n", preview.Image.Height)));
+            StringBuilder result = new StringBuilder(string.Concat(Enumerable.Repeat(new string(' ', image.Width) + "\n", image.Height)));
             for (int i = 0; i < areas.Count; i++)
             {
                 List<Point>? area = areas[i].pixels;
                 foreach (var point in area)
                 {
-                    result[point.X + point.Y * (preview.Image.Height+1)] = lighttodark[i * brightnessstepsize];
+                    result[point.X + point.Y * (image.Height+1)] = lighttodark[i * brightnessstepsize];
                 }
             }
             rtb.Text = result.ToString();
@@ -66,12 +69,12 @@ namespace AsciiGenerator
         public unsafe List<PixelArea> GenerateColorAreas()
         {
             List<PixelArea> areas = new List<PixelArea>();
-            BitmapData lockedbits = ((Bitmap)preview.Image).LockBits(new Rectangle(0,0,preview.Image.Width, preview.Image.Height),System.Drawing.Imaging.ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppPArgb);
+            BitmapData lockedbits = (image).LockBits(new Rectangle(0,0,image.Width, image.Height),System.Drawing.Imaging.ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppPArgb);
             const int bytesperpixel = 4;
 
-            for (int x = 0; x < preview.Image.Width; ++x)
+            for (int x = 0; x < image.Width; ++x)
             {
-                for (int y = 0; y < preview.Image.Height; ++y)
+                for (int y = 0; y < image.Height; ++y)
                 {
                     bool placedpoint = false;
 
@@ -108,7 +111,7 @@ namespace AsciiGenerator
                     }
                 }
             }
-            ((Bitmap)preview.Image).UnlockBits(lockedbits);
+            image.UnlockBits(lockedbits);
             return areas;
         }
     }
