@@ -10,9 +10,11 @@ namespace AsciiGenerator
         TextBox asciicharacters = new TextBox();
         Label asciicharacterlabel = new Label();
         Button uploadimage = new Button();
+        Button resetascii = new Button();
 
         Panel colorareas =new Panel();
         List<Panel> areaitems = new List<Panel>();
+        List<PixelArea> areas = new List<PixelArea>();
 
         Bitmap image;
         const string lighttodark = " `.-':_,^=;><+!rc*/z?sLTv)J7(|Fi{C}fI31tlu[neoZ5Yxjya]2ESwqkP6h9d4VpOGbUAKXHm8RD#$Bg0MNWQ%&@";
@@ -29,6 +31,11 @@ namespace AsciiGenerator
             uploadimage.Size = new Size(100,30);
             uploadimage.Text = "Upload image";
             uploadimage.Click += OnClick;
+
+            resetascii.Location = new Point(220, 0);
+            resetascii.Size = new Size(100,30);
+            resetascii.Text = "Reload";
+            resetascii.Click += ResetASCII;
 
             rtb.Location = new Point(Width/4, 0);
             rtb.Width = (Width / 4) * 3;
@@ -49,6 +56,7 @@ namespace AsciiGenerator
             colorareas.BackColor = Color.White;
 
             Controls.Add(rtb);
+            Controls.Add(resetascii);
             Controls.Add(colorareas);
             Controls.Add(asciicharacterlabel);
             Controls.Add(asciicharacters);
@@ -64,7 +72,7 @@ namespace AsciiGenerator
                 image = (Bitmap)bmp;
             }
             
-            var areas = GenerateColorAreas();
+            areas = GenerateColorAreas();
             areas = areas.OrderByDescending(a=>a.colorsum).ToList();
             float brightnessstepsize = asciicharacters.Text.Count() / areas.Count();
             StringBuilder result = new StringBuilder(string.Concat(Enumerable.Repeat(new string(' ', image.Width) + "\n", image.Height)));
@@ -80,6 +88,7 @@ namespace AsciiGenerator
                 coloroptionspanel.Location = new Point(0, areaitems.Count() * 60 + 10);
                 coloroptionspanel.Size = new Size(colorareas.Width - 20, 50);
                 coloroptionspanel.BackColor = Color.LightBlue;
+                
                 Label identifier = new Label();
                 identifier.Location = new Point(0,0);
                 identifier.Text = "Color area " + (i+1) + ":";
@@ -106,6 +115,21 @@ namespace AsciiGenerator
                 this.color = color;
                 colorsum = color.A + color.R + color.G + color.B;
             }
+        }
+        public void ResetASCII(object sender, EventArgs e)
+        {
+            StringBuilder result = new StringBuilder(string.Concat(Enumerable.Repeat(new string(' ', image.Width) + "\n", image.Height)));
+
+            for (int i = 0; i < areas.Count; i++)
+            {
+                List<Point>? area = areas[i].pixels;
+                foreach (var point in area)
+                {
+                    result[point.X + point.Y * (image.Height + 1)] = areaitems[i].Controls[1].Text[0];
+                }
+            }
+
+            rtb.Text = result.ToString();
         }
         public unsafe List<PixelArea> GenerateColorAreas()
         {
