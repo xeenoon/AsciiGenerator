@@ -20,7 +20,12 @@ namespace AsciiGenerator
         List<PixelArea> areas = new List<PixelArea>();
         Button resetchars = new Button();
 
-        Bitmap image;
+        Label imagescalelabel = new Label();
+        TextBox imagescalevalue = new TextBox();
+        Button regeneratebutton = new Button();
+
+        Bitmap originalimage;
+        Bitmap scaledimage;
         const string lighttodark = " `.-':_,^=;><+!rc/z?sLTv)J7(|Fi{C}fI31tlu[neoZ5Yxjya]2ESwqkP6h9d4VpOGbUAKXHm8RD#$Bg0MNWQ%&@";
 
         public Form1()
@@ -34,7 +39,7 @@ namespace AsciiGenerator
             uploadimage.Location = new Point(0,0);
             uploadimage.Size = new Size(100,30);
             uploadimage.Text = "Upload image";
-            uploadimage.Click += OnClick;
+            uploadimage.Click += UploadImageClick;
 
             resetascii.Location = new Point(220, 0);
             resetascii.Size = new Size(100,30);
@@ -64,6 +69,18 @@ namespace AsciiGenerator
             scalevalue.Size = new Size(50, 30);
             scalevalue.Text = "0.05";
 
+            imagescalelabel.Location = new Point(200, 95);
+            imagescalelabel.Text = "Image scale";
+
+            imagescalevalue.Location = new Point(200, 115);
+            imagescalevalue.Size = new Size(50,30);
+            imagescalevalue.Text = "1";
+
+            regeneratebutton.Location = new Point(260, 115);
+            regeneratebutton.Size = new Size(90,25);
+            regeneratebutton.Text = "Regenerate";
+            regeneratebutton.Click += Regenerate;
+
             //Panel to show all the color areas and allow users to change the character customizeably
             colorareas.Location = new Point(0, 160);
             colorareas.Width = (Width / 4) - 10;
@@ -73,7 +90,11 @@ namespace AsciiGenerator
 
             Controls.Add(rtb);
             Controls.Add(resetchars);
+            Controls.Add(imagescalelabel);
+            Controls.Add(regeneratebutton);
+            Controls.Add(imagescalevalue);
             Controls.Add(resetascii);
+
             Controls.Add(colorareas);
             Controls.Add(scalelabel);
             Controls.Add(scalevalue);
@@ -85,18 +106,34 @@ namespace AsciiGenerator
         {
             asciicharacters.Text = lighttodark;
         }
-        public void OnClick(object sender, EventArgs e)
+        public void Regenerate(object sender, EventArgs e)
+        {
+            double scale = double.Parse(imagescalevalue.Text);
+            Bitmap result = new Bitmap((int)(originalimage.Width * scale), (int)(originalimage.Height * scale));
+            var g = Graphics.FromImage(result);
+            g.DrawImage(originalimage,0,0,(int)(originalimage.Width * scale), (int)(originalimage.Height*scale));
+            scaledimage = result;
+
+            DrawAreas();
+        }
+        public void UploadImageClick(object sender, EventArgs e)
         {
             OpenFileDialog openFileDialog = new OpenFileDialog();
             openFileDialog.ShowDialog();
             if (openFileDialog.FileName != "")
             {
                 var bmp = Bitmap.FromFile(openFileDialog.FileName);
-                image = (Bitmap)bmp;
+                originalimage = (Bitmap)bmp;
+                scaledimage = (Bitmap)originalimage.Clone();
             }
-            
+
+            DrawAreas();
+        }
+
+        public void DrawAreas()
+        {
             areas = GenerateColorAreas();
-            areas = areas.OrderByDescending(a=>a.color.GetBrightness()).ToList();
+            areas = areas.OrderByDescending(a => a.color.GetBrightness()).ToList();
             float brightnessstepsize = asciicharacters.Text.Count() / (float)areas.Count();
             for (int i = 0; i < areas.Count; i++)
             {
@@ -104,17 +141,17 @@ namespace AsciiGenerator
                 coloroptionspanel.Location = new Point(0, areaitems.Count() * 60 + 10);
                 coloroptionspanel.Size = new Size(colorareas.Width - 20, 50);
                 coloroptionspanel.BackColor = Color.LightBlue;
-                
+
                 Label identifier = new Label();
-                identifier.Location = new Point(0,0);
-                identifier.Text = "Color area " + (i+1) + ":";
+                identifier.Location = new Point(0, 0);
+                identifier.Text = "Color area " + (i + 1) + ":";
                 TextBox asciiletter = new TextBox();
                 asciiletter.Location = new Point(identifier.Size.Width, 0);
                 asciiletter.Size = new Size(30, identifier.Height);
                 asciiletter.Text = asciicharacters.Text[(int)(i * brightnessstepsize)].ToString();
                 CheckBox highlighttext = new CheckBox();
                 highlighttext.Location = new Point(identifier.Size.Width + 40);
-                highlighttext.Size = new Size(200,identifier.Height);
+                highlighttext.Size = new Size(200, identifier.Height);
                 highlighttext.Text = "Highlight area";
 
                 coloroptionspanel.Controls.Add(identifier);
@@ -123,7 +160,7 @@ namespace AsciiGenerator
                 areaitems.Add(coloroptionspanel);
                 colorareas.Controls.Add(coloroptionspanel);
             }
-            ResetASCII(null,null);
+            ResetASCII(null, null);
         }
         public void HighlightAreaToggle(object sender, EventArgs e)
         {
@@ -142,22 +179,18 @@ namespace AsciiGenerator
         public void ResetASCII(object sender, EventArgs e)
         {
             rtb.Text = "";
-            StringBuilder result = new StringBuilder(string.Concat(Enumerable.Repeat(new string(' ', image.Width) + "\n", image.Height)));
+            StringBuilder result = new StringBuilder(string.Concat(Enumerable.Repeat(new string(' ', scaledimage.Width) + "\n", scaledimage.Height)));
             List<int> redletteridxs = new List<int>();
             for (int i = 0; i < areas.Count; i++)
             {
                 List<Point>? area = areas[i].pixels;
                 foreach (var point in area)
                 {
-                    int stridx = point.X + point.Y * (image.Height + 1);
+                    int stridx = point.X + point.Y * (scaledimage.Height + 1);
                     result[stridx] = areaitems[i].Controls[1].Text[0];
                     if (((CheckBox)areaitems[i].Controls[2]).Checked)
                     {
                         redletteridxs.Add(stridx);
-                    }
-                    else
-                    {
-
                     }
                 }
             }
@@ -183,12 +216,12 @@ namespace AsciiGenerator
         public unsafe List<PixelArea> GenerateColorAreas()
         {
             List<PixelArea> areas = new List<PixelArea>();
-            BitmapData lockedbits = (image).LockBits(new Rectangle(0,0,image.Width, image.Height),System.Drawing.Imaging.ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppPArgb);
+            BitmapData lockedbits = (scaledimage).LockBits(new Rectangle(0,0,scaledimage.Width, scaledimage.Height),System.Drawing.Imaging.ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppPArgb);
             const int bytesperpixel = 4;
 
-            for (int x = 0; x < image.Width; ++x)
+            for (int x = 0; x < scaledimage.Width; ++x)
             {
-                for (int y = 0; y < image.Height; ++y)
+                for (int y = 0; y < scaledimage.Height; ++y)
                 {
                     bool placedpoint = false;
 
@@ -225,7 +258,7 @@ namespace AsciiGenerator
                     }
                 }
             }
-            image.UnlockBits(lockedbits);
+            scaledimage.UnlockBits(lockedbits);
             return areas;
         }
     }
