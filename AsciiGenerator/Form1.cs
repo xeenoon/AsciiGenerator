@@ -12,6 +12,8 @@ namespace AsciiGenerator
         Label asciicharacterlabel = new Label();
         Button uploadimage = new Button();
         Button resetascii = new Button();
+        Label scalelabel = new Label();
+        TextBox scalevalue = new TextBox();
 
         Panel colorareas =new Panel();
         List<Panel> areaitems = new List<Panel>();
@@ -46,20 +48,29 @@ namespace AsciiGenerator
             asciicharacterlabel.Location = new Point(0, 35);
             asciicharacterlabel.Text = "Gradient colors: ";
 
-            asciicharacters.Location = new Point(0,65);
+            asciicharacters.Location = new Point(0,55);
             asciicharacters.Size = new Size(Width/4 - 10, 30);
             asciicharacters.Text = lighttodark;
 
+            scalelabel.Location = new Point(0,95);
+            scalelabel.Text = "Area color distance";
+
+            scalevalue.Location = new Point(0, 115);
+            scalevalue.Size = new Size(50, 30);
+            scalevalue.Text = "0.05";
+
             //Panel to show all the color areas and allow users to change the character customizeably
-            colorareas.Location = new Point(0, 100);
+            colorareas.Location = new Point(0, 160);
             colorareas.Width = (Width / 4) - 10;
-            colorareas.Height = Height - 170;
+            colorareas.Height = Height - 230;
             colorareas.BackColor = Color.White;
             colorareas.AutoScroll = true;
 
             Controls.Add(rtb);
             Controls.Add(resetascii);
             Controls.Add(colorareas);
+            Controls.Add(scalelabel);
+            Controls.Add(scalevalue);
             Controls.Add(asciicharacterlabel);
             Controls.Add(asciicharacters);
             Controls.Add(uploadimage);
@@ -149,7 +160,7 @@ namespace AsciiGenerator
                 {
                     rtb.AppendText(buffer, Color.Black);
                     buffer = "";
-                    rtb.AppendText(str[i].ToString(), Color.Red);
+                    rtb.AppendText(str[i].ToString(), Color.Red); //Batch?
                 }
                 else
                 {
@@ -189,7 +200,7 @@ namespace AsciiGenerator
                         byte area_a = area_ptr[3];
                         float area_brightness = Color.FromArgb(area_a, area_r, area_g, area_b).GetBrightness();
 
-                        if (Math.Abs(area_brightness - m_brightness) < 0.03) //Check the sums of the difference of the colors
+                        if (Math.Abs(area_brightness - m_brightness) < double.Parse(scalevalue.Text)) //Check the sums of the difference of the colors
                         {
                             //If the colors are siiliar, add myself to the area
                             area.pixels.Add(new Point(x, y));
