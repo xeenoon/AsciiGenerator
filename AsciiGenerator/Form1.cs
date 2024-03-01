@@ -179,6 +179,7 @@ namespace AsciiGenerator
         public void ResetASCII(object sender, EventArgs e)
         {
             rtb.Text = "";
+            areas = GenerateColorAreas();
             StringBuilder result = new StringBuilder(string.Concat(Enumerable.Repeat(new string(' ', scaledimage.Width) + "\n", scaledimage.Height)));
             List<int> redletteridxs = new List<int>();
             for (int i = 0; i < areas.Count; i++)
@@ -187,6 +188,10 @@ namespace AsciiGenerator
                 foreach (var point in area)
                 {
                     int stridx = point.X + point.Y * (scaledimage.Height + 1);
+                    if (stridx > result.Length)
+                    {
+                        continue;
+                    }
                     result[stridx] = areaitems[i].Controls[1].Text[0];
                     if (((CheckBox)areaitems[i].Controls[2]).Checked)
                     {
