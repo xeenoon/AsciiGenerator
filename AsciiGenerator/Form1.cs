@@ -1,3 +1,4 @@
+using System.Diagnostics.Eventing.Reader;
 using System.Drawing.Imaging;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -17,7 +18,7 @@ namespace AsciiGenerator
         List<PixelArea> areas = new List<PixelArea>();
 
         Bitmap image;
-        const string lighttodark = " `.-':_,^=;><+!rc*/z?sLTv)J7(|Fi{C}fI31tlu[neoZ5Yxjya]2ESwqkP6h9d4VpOGbUAKXHm8RD#$Bg0MNWQ%&@";
+        const string lighttodark = " `.-':_,^=;><+!rc/z?sLTv)J7(|Fi{C}fI31tlu[neoZ5Yxjya]2ESwqkP6h9d4VpOGbUAKXHm8RD#$Bg0MNWQ%&@";
 
         public Form1()
         {
@@ -52,7 +53,7 @@ namespace AsciiGenerator
             //Panel to show all the color areas and allow users to change the character customizeably
             colorareas.Location = new Point(0, 100);
             colorareas.Width = (Width / 4) - 10;
-            colorareas.Height = Height - 110;
+            colorareas.Height = Height - 170;
             colorareas.BackColor = Color.White;
             colorareas.AutoScroll = true;
 
@@ -74,17 +75,10 @@ namespace AsciiGenerator
             }
             
             areas = GenerateColorAreas();
-            areas = areas.OrderByDescending(a=>a.colorsum).ToList();
+            areas = areas.OrderByDescending(a=>a.color.GetBrightness()).ToList();
             float brightnessstepsize = asciicharacters.Text.Count() / (float)areas.Count();
-            StringBuilder result = new StringBuilder(string.Concat(Enumerable.Repeat(new string(' ', image.Width) + "\n", image.Height)));
             for (int i = 0; i < areas.Count; i++)
             {
-                List<Point>? area = areas[i].pixels;
-                foreach (var point in area)
-                {
-                    result[point.X + point.Y * (image.Width + 1)] = asciicharacters.Text[(int)(i * brightnessstepsize)];
-                }
-
                 Panel coloroptionspanel = new Panel();
                 coloroptionspanel.Location = new Point(0, areaitems.Count() * 60 + 10);
                 coloroptionspanel.Size = new Size(colorareas.Width - 20, 50);
@@ -101,7 +95,6 @@ namespace AsciiGenerator
                 highlighttext.Location = new Point(identifier.Size.Width + 40);
                 highlighttext.Size = new Size(200,identifier.Height);
                 highlighttext.Text = "Highlight area";
-                highlighttext.Click += HighlightAreaToggle;
 
                 coloroptionspanel.Controls.Add(identifier);
                 coloroptionspanel.Controls.Add(asciiletter);
@@ -109,38 +102,62 @@ namespace AsciiGenerator
                 areaitems.Add(coloroptionspanel);
                 colorareas.Controls.Add(coloroptionspanel);
             }
-            rtb.Text = result.ToString();
+            ResetASCII(null,null);
         }
         public void HighlightAreaToggle(object sender, EventArgs e)
         {
-            CheckBox checkbox = (CheckBox)sender;
+            ResetASCII(sender, e);
         }
         public struct PixelArea
         {
             public List<Point> pixels = new List<Point>();
             public Color color;
-            public int colorsum;
 
             public PixelArea(Color color)
             {
                 this.color = color;
-                colorsum = color.A + color.R + color.G + color.B;
             }
         }
         public void ResetASCII(object sender, EventArgs e)
         {
+            rtb.Text = "";
             StringBuilder result = new StringBuilder(string.Concat(Enumerable.Repeat(new string(' ', image.Width) + "\n", image.Height)));
-
+            List<int> redletteridxs = new List<int>();
             for (int i = 0; i < areas.Count; i++)
             {
                 List<Point>? area = areas[i].pixels;
                 foreach (var point in area)
                 {
-                    result[point.X + point.Y * (image.Height + 1)] = areaitems[i].Controls[1].Text[0];
+                    int stridx = point.X + point.Y * (image.Height + 1);
+                    result[stridx] = areaitems[i].Controls[1].Text[0];
+                    if (((CheckBox)areaitems[i].Controls[2]).Checked)
+                    {
+                        redletteridxs.Add(stridx);
+                    }
+                    else
+                    {
+
+                    }
                 }
             }
-
-            rtb.Text = result.ToString();
+            //Go through the string and place the red text
+            string buffer = "";
+            string str = result.ToString();
+            for (int i = 0; i < str.Length; i++)
+            {
+                if (redletteridxs.Contains(i))
+                {
+                    rtb.AppendText(buffer, Color.Black);
+                    buffer = "";
+                    rtb.AppendText(str[i].ToString(), Color.Red);
+                }
+                else
+                {
+                    buffer += str[i];
+                }
+            }
+       //     rtb.Text += buffer;
+            rtb.AppendText(buffer, Color.Black);
         }
         public unsafe List<PixelArea> GenerateColorAreas()
         {
@@ -159,7 +176,7 @@ namespace AsciiGenerator
                     byte m_g = m_ptr[1];
                     byte m_b = m_ptr[2];
                     byte m_a = m_ptr[3];
-                    int m_sum = m_a + m_r + m_g + m_b;
+                    float m_brightness = Color.FromArgb(m_a, m_r, m_g, m_b).GetBrightness();
                     if (m_a < 200) { continue; }
                     foreach (var area in areas)
                     {
@@ -170,9 +187,9 @@ namespace AsciiGenerator
                         byte area_g = area_ptr[1];
                         byte area_b = area_ptr[2];
                         byte area_a = area_ptr[3];
-                        int area_sum = area_a + area_r + area_g + area_b;
+                        float area_brightness = Color.FromArgb(area_a, area_r, area_g, area_b).GetBrightness();
 
-                        if (Math.Abs(area_sum - m_sum) < 20) //Check the sums of the difference of the colors
+                        if (Math.Abs(area_brightness - m_brightness) < 0.03) //Check the sums of the difference of the colors
                         {
                             //If the colors are siiliar, add myself to the area
                             area.pixels.Add(new Point(x, y));
