@@ -18,6 +18,7 @@ namespace AsciiGenerator
         Panel colorareas =new Panel();
         List<Panel> areaitems = new List<Panel>();
         List<PixelArea> areas = new List<PixelArea>();
+        Button resetchars = new Button();
 
         Bitmap image;
         const string lighttodark = " `.-':_,^=;><+!rc/z?sLTv)J7(|Fi{C}fI31tlu[neoZ5Yxjya]2ESwqkP6h9d4VpOGbUAKXHm8RD#$Bg0MNWQ%&@";
@@ -47,6 +48,10 @@ namespace AsciiGenerator
 
             asciicharacterlabel.Location = new Point(0, 35);
             asciicharacterlabel.Text = "Gradient colors: ";
+            resetchars.Location = new Point(150, 35);
+            resetchars.Size = new Size(70, 20);
+            resetchars.Text = "Reset";
+            resetchars.Click += ResetCharsClick;
 
             asciicharacters.Location = new Point(0,55);
             asciicharacters.Size = new Size(Width/4 - 10, 30);
@@ -67,6 +72,7 @@ namespace AsciiGenerator
             colorareas.AutoScroll = true;
 
             Controls.Add(rtb);
+            Controls.Add(resetchars);
             Controls.Add(resetascii);
             Controls.Add(colorareas);
             Controls.Add(scalelabel);
@@ -74,6 +80,10 @@ namespace AsciiGenerator
             Controls.Add(asciicharacterlabel);
             Controls.Add(asciicharacters);
             Controls.Add(uploadimage);
+        }
+        public void ResetCharsClick(object sender, EventArgs e)
+        {
+            asciicharacters.Text = lighttodark;
         }
         public void OnClick(object sender, EventArgs e)
         {
