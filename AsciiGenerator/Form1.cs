@@ -179,7 +179,7 @@ namespace AsciiGenerator
         public void ResetASCII(object sender, EventArgs e)
         {
             rtb.Text = "";
-            areas = GenerateColorAreas();
+           // areas = GenerateColorAreas();
             StringBuilder result = new StringBuilder(string.Concat(Enumerable.Repeat(new string(' ', scaledimage.Width) + "\n", scaledimage.Height)));
             List<int> redletteridxs = new List<int>();
             for (int i = 0; i < areas.Count; i++)
